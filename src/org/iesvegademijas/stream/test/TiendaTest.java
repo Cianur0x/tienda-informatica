@@ -255,8 +255,9 @@ class TiendaTest {
 
             List<Fabricante> listFab = fabHome.findAll();
 
-            //TODO STREAMS
-
+            // TODO STREAMS
+            List<String> listaReversa = listFab.stream().sorted(comparing(Fabricante::getNombre).reversed()).map(fabricante -> fabricante.getNombre()).toList();
+            listaReversa.forEach(System.out::println);
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
             fabHome.rollbackTransaction();
@@ -277,6 +278,9 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            listProd.stream().sorted(comparing((Producto p) -> p.getNombre())
+                            .thenComparing((comparing(Producto::getPrecio)).reversed()))
+                    .map(producto -> producto.getNombre() + " - " + producto.getPrecio()).forEach(s -> System.out.println(s));
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -300,7 +304,8 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
-
+            List<Fabricante> cinco =  listFab.stream().limit(5).toList();
+            assertEquals(5, cinco.size());
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
             fabHome.rollbackTransaction();
@@ -320,8 +325,10 @@ class TiendaTest {
             fabHome.beginTransaction();
 
             List<Fabricante> listFab = fabHome.findAll();
-
             //TODO STREAMS
+            List<Fabricante> cinco =  listFab.stream().skip(3).limit(2).toList();
+
+            assertEquals(2, cinco.size());
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -343,6 +350,8 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            listProd.stream().sorted(comparing(Producto::getPrecio)).limit(1)
+                    .map(producto -> producto.getNombre() + " - " + producto.getPrecio()).forEach(s -> System.out.println(s));
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
