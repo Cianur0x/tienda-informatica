@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toSet;
@@ -859,10 +860,48 @@ class TiendaTest {
                     .sorted(comparing(Producto::getPrecio).reversed()
                             .thenComparing(Producto::getNombre))
                     .toList();
+            System.out.println(productosValidos.size());
             System.out.println("""
-                    Producto                Precio             Fabricante
-                    -----------------------------------------------------""");
-           //  Optional<Integer>
+                    Producto                           Precio   Fabricante
+                    ----------------------------------------------------------------""");
+            Optional<Integer> maxNombre = listProd.stream()
+                    .map(producto -> producto.getNombre().length())
+                    .reduce((a, b) -> a > b ? a : b);
+
+            Optional<Integer> maxPrecio = listProd.stream()
+                    .map(producto -> Double.toString(producto.getPrecio()).length())
+                    .reduce((a, b) -> a > b ? a : b);
+
+            Optional<Integer> maxFabricante = listProd.stream()
+                    .map(producto -> producto.getFabricante().getNombre().length())
+                    .reduce((a, b) -> a > b ? a : b);
+
+            StringBuilder cadena = new StringBuilder();
+            for (Producto p : productosValidos
+            ) {
+                cadena.append(p.getNombre()).append(" ");
+                int espaciosNombre = maxNombre.get() - p.getNombre().length();
+                for (int i = 0; i < espaciosNombre; i++) {
+                    cadena.append(" ");
+                }
+                cadena.append(" | ").append(p.getPrecio());
+
+                int espaciosPrecio = maxPrecio.get() - Double.toString(p.getPrecio()).length();
+                for (int i = 0; i < espaciosPrecio; i++) {
+                    cadena.append(" ");
+                }
+
+                cadena.append(" | ").append(p.getFabricante().getNombre());
+                int espaciosFabricante = maxFabricante.get() - p.getFabricante().getNombre().length();
+                for (int i = 0; i < espaciosFabricante; i++) {
+                    cadena.append(" ");
+                }
+                cadena.append("\n");
+
+            }
+
+            String tabla = cadena.toString();
+            System.out.println(tabla);
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -935,7 +974,21 @@ class TiendaTest {
 
             List<Fabricante> listFab = fabHome.findAll();
 
-            //TODO STREAMS
+            // TODO STREAMS
+            String resultado = listFab.stream().reduce("", (acumulador, fabricante) -> {
+                String resultado2 = "Fabricante: " + fabricante.getNombre() + "\n\nProductos\n";
+                Optional<String> productos = fabricante.getProductos().stream()
+                        .map(producto -> producto.getNombre() + "\n")
+                        .reduce((s, s2) -> s + s2);
+
+                if (productos.isPresent()) {
+                    resultado2 += productos.get();
+                }
+
+                return acumulador + resultado2 + "\n";
+            }, String::concat);
+
+            System.out.println(resultado);
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -958,6 +1011,9 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            List<Fabricante> fabricantesSinProd = listFab.stream()
+                    .filter(fabricante -> fabricante.getProductos().isEmpty()).toList();
+            fabricantesSinProd.forEach(fabricante -> System.out.println(fabricante.getNombre()));
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -979,6 +1035,8 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+
+            // Integer totalProductos = listProd.stream().reduce()
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
