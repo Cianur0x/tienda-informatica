@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -518,6 +519,19 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            final Set<Integer> setValidos = new HashSet<>();
+            setValidos.add(1);
+            setValidos.add(3);
+            setValidos.add(5);
+
+            // estamos ahciedno una closyra, usando una variable externa al lambda obligatoriamente tiene que ser final,
+            // si no la declaras fianl el compilador no se va a quejar si no la modificas claro
+
+            List<String> pValidos = listProd.stream()
+                    .filter(producto -> setValidos.contains(producto.getFabricante().getCodigo()))
+                    .map(producto -> "Fabricante: " + producto.getFabricante().getCodigo() + " Producto: " + producto.getNombre() + " " + producto.getPrecio())
+                    .toList();
+            pValidos.forEach(integer -> System.out.println(integer));
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
