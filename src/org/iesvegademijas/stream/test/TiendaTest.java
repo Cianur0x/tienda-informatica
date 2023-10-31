@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -1060,6 +1062,11 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            List<Integer> listaFabricantes = listProd.stream()
+                    .map(producto -> producto.getFabricante().getCodigo())
+                    .distinct().sorted().toList();
+
+            listaFabricantes.forEach(integer -> System.out.println("Fabricante cod: " + integer));
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1083,6 +1090,14 @@ class TiendaTest {
 
             //TODO STREAMS
 
+            double mediaTotal = listProd.stream().distinct()
+                    .map(producto -> producto.getPrecio())
+                    .reduce(0d, Double::sum) / listProd.stream().distinct().toList().size();
+
+            BigDecimal bd = BigDecimal.valueOf(mediaTotal);
+            bd = bd.setScale(2, RoundingMode.HALF_UP);
+
+            assertEquals(BigDecimal.valueOf(271.72), bd);
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
             prodHome.rollbackTransaction();
@@ -1104,6 +1119,10 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            Optional<Double> max = listProd.stream().map(producto -> producto.getPrecio())
+                    .reduce(Double::min);
+
+            max.ifPresent(aDouble -> assertEquals(59.99, aDouble));
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1126,6 +1145,11 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            double sumaTotal = listProd.stream().distinct()
+                    .map(producto -> producto.getPrecio())
+                    .reduce(0d, Double::sum);
+
+            assertEquals(2988.96, sumaTotal);
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1148,6 +1172,7 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
