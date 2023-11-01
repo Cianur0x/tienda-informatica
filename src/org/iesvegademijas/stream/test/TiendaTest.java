@@ -1476,8 +1476,20 @@ class TiendaTest {
             fabHome.beginTransaction();
 
             List<Fabricante> listFab = fabHome.findAll();
-
+            // reduce funcion de agregación, se puede usar de muchas maneras, combianr una secuenncia de elemntos en un mismo resultado
             //TODO STREAMS
+            List<String> sumaMayorMil = listFab.stream()
+                    .map(fabricante -> {
+                        Double sumaPrecios = fabricante.getProductos().stream()
+                                .map(producto -> producto.getPrecio())
+                                .reduce(0.0, (aDouble, aDouble2) -> aDouble + aDouble2);
+                        return new Object[]{fabricante.getNombre(), sumaPrecios};
+
+                    })
+                    .filter(objects -> (Double) objects[1] > 1000)
+                    .map(objects -> (String) objects[0]).toList();
+
+            sumaMayorMil.forEach(s -> System.out.println(s));
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1502,6 +1514,18 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            List<String> sumaMayorMil = listFab.stream()
+                    .map(fabricante -> {
+                        Double sumaPrecios = fabricante.getProductos().stream()
+                                .map(producto -> producto.getPrecio())
+                                .reduce(0.0, (aDouble, aDouble2) -> aDouble + aDouble2);
+                        return new Object[]{fabricante.getNombre(), sumaPrecios};
+
+                    })
+                    .filter(objects -> (Double) objects[1] > 1000).sorted(comparing(objects -> (Double) objects[1]))
+                    .map(objects -> (String) objects[0]).toList();
+
+            sumaMayorMil.forEach(s -> System.out.println(s));
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1527,6 +1551,24 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            List<Object[]> mayorProducto = listFab.stream()
+                    .map(fabricante -> {
+                        Optional<Producto> productoOptional = fabricante.getProductos().stream().reduce((producto, producto2) -> producto.getPrecio() > producto2.getPrecio() ? producto : producto2);
+                        String nombre = "";
+                        double precio = 0.0;
+
+                        if (productoOptional.isPresent()) {
+                            nombre = productoOptional.get().getNombre();
+                            precio = productoOptional.get().getPrecio();
+                        }
+
+                        return new Object[]{fabricante.getNombre(), nombre, precio};
+                    })
+                    .sorted(comparing(objects -> (String) objects[0])).toList();
+
+            for (Object[] objects : mayorProducto) {
+                System.out.printf("%-20s %-33s %8.2f%n", objects[0], objects[1], (Double) objects[2]);
+            }
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1537,7 +1579,7 @@ class TiendaTest {
     }
 
     /**
-     * 46. Devuelve un listado de todos los productos que tienen un precio mayor o igual a la media de todos los productos de su mismo fabricante.
+     * 46. Devuelve un listado de todos los productos que tienen un precio mayor o igual a la media de los precios de los productos de su mismo fabricante.
      * Se ordenará por fabricante en orden alfabético ascendente y los productos de cada fabricante tendrán que estar ordenados por precio descendente.
      */
     @Test
@@ -1550,7 +1592,32 @@ class TiendaTest {
 
             List<Fabricante> listFab = fabHome.findAll();
 
+            List<Object[]> listaProdMedia = listFab.stream().map(fabricante -> {
+                var calculosOptional = fabricante.getProductos().stream()
+                        .map(producto -> new Double[]{producto.getPrecio(), 1.0})
+                        .reduce((acumulador, valores) -> new Double[]{
+                                        acumulador[0] + valores[0],
+                                        acumulador[1] + valores[1]
+                                }
+                        );
+                if (calculosOptional.isPresent()) {
+                    var calculos = calculosOptional.get();
+                    double media = (calculos[0] / calculos[1]);
+
+                    var productosFiltrados = fabricante.getProductos().stream()
+                           .filter(producto -> producto.getPrecio() >= media)
+                           .sorted(comparing(producto -> producto.getPrecio())).toList();
+
+                    return new Object[]{fabricante.getNombre(), productosFiltrados};
+                }
+                return new Object[]{fabricante.getNombre()};
+            }).filter(objects -> objects.length == 2).sorted(comparing(objects -> (String) objects[0], reverseOrder())).toList();
+
             //TODO STREAMS
+            for (Object[] objects : listaProdMedia) {
+                System.out.printf("Fabricante: %-20s%n", objects[0]);
+                ((List<Producto>) objects[1]).forEach(producto -> System.out.printf("  %-20s%n", producto.getNombre()));
+            }
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
