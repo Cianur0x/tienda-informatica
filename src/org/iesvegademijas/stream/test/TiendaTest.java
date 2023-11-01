@@ -8,12 +8,11 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
+import static java.util.Comparator.reverseOrder;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1172,7 +1171,11 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            long productosAsus = listProd.stream()
+                    .filter(producto -> producto.getFabricante().getNombre().equalsIgnoreCase("Asus"))
+                    .count();
 
+            assertEquals(2, productosAsus);
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1195,6 +1198,19 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            long productosAsus = listProd.stream()
+                    .filter(producto -> producto.getFabricante().getNombre().equalsIgnoreCase("Asus"))
+                    .count();
+
+            Optional<Double> mediaAsus = listProd.stream()
+                    .filter(producto -> producto.getFabricante().getNombre().equalsIgnoreCase("Asus"))
+                    .map(producto -> producto.getPrecio())
+                    .reduce((aDouble, aDouble2) -> aDouble + aDouble2);
+
+            assertEquals(2, productosAsus);
+
+            mediaAsus.ifPresent(aDouble -> System.out.println(aDouble / productosAsus));
+
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1219,6 +1235,31 @@ class TiendaTest {
             List<Producto> listProd = prodHome.findAll();
 
             //TODO STREAMS
+            Double[] resultado1 = listProd.stream()
+                    .filter(producto -> producto.getFabricante().getNombre().equalsIgnoreCase("Crucial"))
+                    .map(producto -> new Double[]{producto.getPrecio(), producto.getPrecio(), 1.0})
+                    .reduce(
+                            new Double[]{Double.MIN_VALUE, Double.MAX_VALUE, 0.0}, // si no ahy ningun elemento tendra el valro inical por eso es necesario declararlo
+                            (acumulador, valores) -> new Double[]{
+                                    Math.max(acumulador[0], valores[0]),
+                                    Math.min(acumulador[1], valores[1]),
+                                    acumulador[2] + valores[2]
+                            }
+                    );
+
+
+            Optional<Double[]> resultado = listProd.stream()
+                    .filter(producto -> producto.getFabricante().getNombre().equalsIgnoreCase("Crucial"))
+                    .map(producto -> new Double[]{producto.getPrecio(), producto.getPrecio(), 1.0})
+                    .reduce(// pilla el pirmer leemnto con el formato dado por el map, valo rinicial del acumulador
+                            (acc, val) -> new Double[]{
+                                    Math.min(acc[0], val[0]), // Mínimo
+                                    Math.max(acc[1], val[1]), // Máximo
+                                    acc[2] + val[2]// Conteo
+                            }
+                    );
+            Optional<Double> minOp = resultado.map(doubles -> doubles[2]);
+            System.out.println(minOp);
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1234,18 +1275,18 @@ class TiendaTest {
      * El resultado mostrará dos columnas, una con el nombre del fabricante y otra con el número de productos que tiene.
      * Ordene el resultado descendentemente por el número de productos. Utiliza String.format para la alineación de los nombres y las cantidades.
      * La salida debe queda como sigue:
-     * <p>
-     * Fabricante     #Productos
-     * -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-     * Asus              2
-     * Lenovo              2
-     * Hewlett-Packard              2
-     * Samsung              1
-     * Seagate              1
-     * Crucial              2
-     * Gigabyte              1
-     * Huawei              0
-     * Xiaomi              0
+
+               Fabricante     #Productos
+     -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                Asus              2
+              Lenovo              2
+     Hewlett-Packard              2
+             Samsung              1
+             Seagate              1
+             Crucial              2
+            Gigabyte              1
+              Huawei              0
+              Xiaomi              0
      */
     @Test
     void test38() {
@@ -1258,7 +1299,18 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            String encabezado = String.format("%15s%15s%n", "Fabricante", "#Productos");
+            encabezado += "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n";
+            String resultado = listFab.stream()
+                    .sorted(comparing(fabricante -> fabricante.getProductos().size(), reverseOrder()))
+                    .reduce("", (acumulador, fabricante) -> {
 
+                        int numProductos = fabricante.getProductos().size();
+                        String resultado2 = String.format("%15s%15d", fabricante.getNombre(), numProductos);
+                        return acumulador + resultado2 + "\n";
+                    }, String::concat);
+
+            System.out.println(encabezado + resultado);
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
             fabHome.rollbackTransaction();
@@ -1282,6 +1334,27 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            String resultado1 = listFab.stream()
+                    .map(fabricante -> {
+                        var calculosOptional = fabricante.getProductos().stream()
+                                .map(producto -> new Double[]{producto.getPrecio(), producto.getPrecio(), producto.getPrecio(), 1.0})
+                                .reduce(       (acumulador, valores) -> new Double[]{
+                                                Math.max(acumulador[0], valores[0]),
+                                                Math.min(acumulador[1], valores[1]),
+                                                acumulador[2] + valores[2],
+                                                acumulador[3] + valores[3]
+                                        }
+                                );
+                        if (calculosOptional.isPresent()) {
+                            var calculos = calculosOptional.get();
+
+                            return String.format("%-20s Mínimo %8.2f    Máximo %8.2f    Media %8.2f \n", fabricante.getNombre(), calculos[1] , calculos[0] , (calculos[2] / calculos[3]));
+                        }
+                        return String.format("%-20s", fabricante.getNombre()) + " No tiene productos" + "\n";
+
+                    }).collect(Collectors.joining());
+
+            System.out.println(resultado1);
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1305,6 +1378,30 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            String resultado1 = listFab.stream()
+                    .map(fabricante -> {
+                        var calculosOptional = fabricante.getProductos().stream()
+                                .map(producto -> new Double[]{producto.getPrecio(), producto.getPrecio(), producto.getPrecio(), 1.0})
+                                .reduce((acumulador, valores) -> new Double[]{
+                                                Math.max(acumulador[0], valores[0]),
+                                                Math.min(acumulador[1], valores[1]),
+                                                acumulador[2] + valores[2],
+                                                acumulador[3] + valores[3]
+                                        }
+                                );
+                        if (calculosOptional.isPresent()) {
+                            var calculos = calculosOptional.get();
+                            double media = (calculos[2] / calculos[3]);
+                            if (media >= 200) {
+                                return String.format("%-20s Mínimo %8.2f    Máximo %8.2f    Media %8.2f \n", fabricante.getNombre() + " " + fabricante.getCodigo(), calculos[1], calculos[0], media);
+                            }
+                        }
+                        return "";
+
+                    }).collect(Collectors.joining());
+
+            System.out.println(resultado1);
+
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1327,7 +1424,9 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
-
+            List<Fabricante> fabDosProductos = listFab.stream().filter(fabricante -> fabricante.getProductos().size() >= 2)
+                            .toList();
+            fabDosProductos.forEach(fabricante -> System.out.printf("%-20s %5d %n", fabricante.getNombre(), fabricante.getProductos().size()));
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
             fabHome.rollbackTransaction();
@@ -1350,7 +1449,13 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             //TODO STREAMS
+            List<Object[]> fabDosProductos = listFab.stream().map(fabricante -> {
+                        Set<Producto> productos = fabricante.getProductos().stream().filter(producto -> producto.getPrecio() >= 220).collect(toSet());
+                        return new Object[]{(String) fabricante.getNombre(), (Integer) productos.size()};
 
+                    })
+                    .sorted(comparing(objects -> (int)objects[1], reverseOrder())).toList(); // no sabe como comparar si no se le dice el tipo
+            fabDosProductos.forEach(objects -> System.out.println(objects[0] + " " + objects[1]));
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
             fabHome.rollbackTransaction();
