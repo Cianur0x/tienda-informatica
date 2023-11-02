@@ -1313,7 +1313,7 @@ class TiendaTest {
                         int numProductos = fabricante.getProductos().size();
                         String resultado2 = String.format("%15s%15d", fabricante.getNombre(), numProductos);
                         return acumulador + resultado2 + "\n";
-                    }, String::concat);
+                    }, String::concat); // que si el tipo del acumulador y el elemento son difrentes tiene que haber un combinador
 
             System.out.println(encabezado + resultado);
             fabHome.commitTransaction();
