@@ -8,10 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
@@ -870,15 +867,15 @@ class TiendaTest {
                     ----------------------------------------------------------------""");
             Optional<Integer> maxNombre = listProd.stream()
                     .map(producto -> producto.getNombre().length())
-                    .reduce((a, b) -> a > b ? a : b);
+                    .reduce(Integer::max);
 
             Optional<Integer> maxPrecio = listProd.stream()
                     .map(producto -> Double.toString(producto.getPrecio()).length())
-                    .reduce((a, b) -> a > b ? a : b);
+                    .reduce(Integer::max);
 
             Optional<Integer> maxFabricante = listProd.stream()
                     .map(producto -> producto.getFabricante().getNombre().length())
-                    .reduce((a, b) -> a > b ? a : b);
+                    .reduce(Integer::max);
 
             StringBuilder cadena = new StringBuilder();
             for (Producto p : productosValidos
@@ -979,6 +976,7 @@ class TiendaTest {
             List<Fabricante> listFab = fabHome.findAll();
 
             // TODO STREAMS
+            // replace all
             String resultado = listFab.stream().reduce("", (acumulador, fabricante) -> {
                 String resultado2 = "Fabricante: " + fabricante.getNombre() + "\n\nProductos\n";
                 Optional<String> productos = fabricante.getProductos().stream()
@@ -1263,8 +1261,8 @@ class TiendaTest {
                                     acc[2] + val[2]// Conteo
                             }
                     );
-            Optional<Double> minOp = resultado.map(doubles -> doubles[2]);
-            System.out.println(minOp);
+            // Optional<Double> minOp = resultado.map(doubles -> doubles[2]);
+            System.out.println(Arrays.stream(resultado1).toList());
 
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
