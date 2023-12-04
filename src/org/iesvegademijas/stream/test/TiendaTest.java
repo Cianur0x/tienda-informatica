@@ -13,13 +13,19 @@ import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.reverseOrder;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 class TiendaTest {
-
+    /**
+     * Orden ascendente: ordena los datos alfabéticamente (de la A a la Z) o mediante valores numéricos ascendentes.
+     * Orden descendente: ordena los datos en orden alfabético inverso (de la Z a la A) o mediante valores numéricos descendentes.
+     * Números orden ascendente 0 - 10
+     * Números orden descendente 10 - 0
+     * */
     @Test
     void testSkeletonFrabricante() {
 
@@ -231,6 +237,7 @@ class TiendaTest {
             //TODO STREAMS
             List<Integer> fabricantesConProductos = listFab.stream().map(fabricante -> fabricante.getProductos().size()).filter(integer -> integer > 0).toList();
             fabricantesConProductos.forEach(codigo -> System.out.println("Código: " + codigo));
+            // .filter(f->!f.getProductos().isEmpty())
 
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -350,6 +357,11 @@ class TiendaTest {
             listProd.stream().sorted(comparing(Producto::getPrecio)).limit(1)
                     .map(producto -> producto.getNombre() + " - " + producto.getPrecio()).forEach(s -> System.out.println(s));
 
+//            .min(comparingDouble(Producto::getPrecio))
+//                    .map(p -> "Nombre: "+p.getNombre()+", Precio: "+p.getPrecio())
+//                    .ifPresent(System.out::println);
+
+
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
             prodHome.rollbackTransaction();
@@ -377,6 +389,10 @@ class TiendaTest {
                     .sorted(comparing(Producto::getPrecio).reversed())
                     .findFirst();
             optionalProducto.ifPresent(producto -> System.out.println(producto.getNombre() + " " + producto.getPrecio()));
+
+//            .max(comparingDouble(Producto::getPrecio))
+//                    .map(p -> "Nombre: "+p.getNombre()+", Precio: "+p.getPrecio())
+//                    .ifPresent(System.out::println);
 
 //            listProd.stream().sorted(comparing(Producto::getPrecio).reversed()).limit(1)
 //                    .map(producto -> producto.getNombre() + " - " + producto.getPrecio()).forEach(s -> System.out.println(s));
@@ -608,7 +624,7 @@ class TiendaTest {
             List<String> fabricantesConS = listFab.stream()
                     .filter(fabricante -> fabricante.getNombre().substring(0, 1).equals("S"))
                     .map(fabricante -> fabricante.getNombre()).toList();
-
+            // .filter(f->f.getNombre().charAt(0)=='S')
 
             fabricantesConS.forEach(s -> System.out.println(s));
             fabHome.commitTransaction();
@@ -635,7 +651,8 @@ class TiendaTest {
             List<String> protatiles = listProd.stream()
                     .filter(producto -> producto.getNombre().contains("Portátil"))
                     .map(producto -> producto.getNombre()).toList();
-
+            // .map(Producto::getNombre)
+            // .filter(nombre -> nombre.contains("Portátil")).toList();
 
             protatiles.forEach(s -> System.out.println(s));
 
@@ -699,6 +716,18 @@ class TiendaTest {
 
             productos.forEach(s -> System.out.println(s));
 
+//            listProd.stream()
+//                    // filter precio
+//                    .filter(p->p.getPrecio()>=180)
+//                    // ordenar por precio invertido
+//                    .sorted(comparing(Producto::getPrecio)
+//                            .reversed()
+//                            // ordenar por nombre
+//                            .thenComparing(Producto::getNombre))
+//                    //formatear la salida
+//                    .map(p ->"Nombre: "+ p.getNombre()+",Precio: "+p.getPrecio())
+//                    .forEach(System.out::println);
+
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
             prodHome.rollbackTransaction();
@@ -722,7 +751,7 @@ class TiendaTest {
 
             //TODO STREAMS
             List<String> productos = listProd.stream()
-                    .filter(producto -> producto.getPrecio() >= 180)
+                    .filter(producto -> producto.getPrecio() >= 180) // esto sobra xd
                     .sorted(comparing((Producto p) -> p.getFabricante().getNombre()))
                     .map(producto -> producto.getNombre() + " " + producto.getPrecio() + " " + producto.getFabricante().getNombre()).toList();
 
@@ -912,6 +941,62 @@ class TiendaTest {
 
     }
 
+    @Test
+    void test27B() {
+
+        ProductoHome prodHome = new ProductoHome();
+        try {
+            prodHome.beginTransaction();
+
+            List<Producto> listProd = prodHome.findAll();
+
+            //TODO STREAMS
+            //filtrar y ordenar que valen pa todos
+            listProd = listProd.stream()
+                    .filter(p -> p.getPrecio() >= 180)
+                    .sorted(comparing(Producto::getPrecio).reversed()
+                            .thenComparing(Producto::getNombre))
+                    .toList();
+            //obteniendo la longitud maxima para cada campo
+//la longitud maxima no incluye la primera fila("Producto" "Precio" "Fabricante")
+// porque en ese caso no es necesario
+// si se quiere añadir hay que obtener una lista y añadirlos etc. y son lineas de codigos mas
+            //lenght nombre
+            int ln = listProd.stream()
+                    .map(p -> p.getNombre().length())
+                    .max(Integer::compareTo)
+                    .orElse(0);
+            //lenght producto
+            int lp = listProd.stream()
+                    .map(p -> (p.getPrecio() + "").length())
+                    .max(Integer::compareTo)
+                    .orElse(0);
+            //lenght fabricante
+            int lf = listProd.stream()
+                    .map(p -> p.getFabricante().getNombre().length())
+                    .max(Integer::compareTo)
+                    .orElse(0);
+            //imprimir la primera fila
+            System.out.println(String.format("%1$-" + (ln + 1) + "s", "Producto")
+                    + String.format("%1$-" + (lp + 1) + "s", "Precio")
+                    + String.format("%1$-" + (lf) + "s", "Fabricante"));
+            //imprimir los "-", +2 por 2"|"
+            System.out.println("-".repeat(ln + lp + lf + 2));
+            //imprimir los productos
+            listProd.stream()
+                    .map(p -> String.format("%1$-" + ln + "s", p.getNombre()) + "|"
+                            + String.format("%1$-" + lp + "s", p.getPrecio()) + "|"
+                            + String.format("%1$-" + lf + "s", p.getFabricante().getNombre()))
+                    .forEach(System.out::println);
+
+            prodHome.commitTransaction();
+        } catch (RuntimeException e) {
+            prodHome.rollbackTransaction();
+            throw e; // or display error message
+        }
+
+    }
+
     /**
      * 28. Devuelve un listado de los nombres fabricantes que existen en la base de datos, junto con los nombres productos que tiene cada uno de ellos.
      * El listado deberá mostrar también aquellos fabricantes que no tienen productos asociados.
@@ -992,6 +1077,34 @@ class TiendaTest {
 
             System.out.println(resultado);
 
+            fabHome.commitTransaction();
+        } catch (RuntimeException e) {
+            fabHome.rollbackTransaction();
+            throw e; // or display error message
+        }
+    }
+
+    @Test
+    void test28B() {
+
+        FabricanteHome fabHome = new FabricanteHome();
+
+        try {
+            fabHome.beginTransaction();
+
+            List<Fabricante> listFab = fabHome.findAll();
+
+            //TODO STREAMS
+            listFab.stream()
+                    //formatear la salida(sobretodo los \n y \t)
+                    .map(f -> "Fabricante: " + f.getNombre() + "\n\n\tProductos:\n" +
+                            //un segundo stream para los productos
+                            f.getProductos().stream()
+                                    //formatear la salida de producto
+                                    .map(p -> "\t" + p.getNombre() + "\n")
+                                    //para que no salta como lista, osea sin "[],"
+                                    .collect(joining()))
+                    .forEach(System.out::println);
             fabHome.commitTransaction();
         } catch (RuntimeException e) {
             fabHome.rollbackTransaction();
@@ -1099,6 +1212,12 @@ class TiendaTest {
             BigDecimal bd = BigDecimal.valueOf(mediaTotal);
             bd = bd.setScale(2, RoundingMode.HALF_UP);
 
+//            listProd.stream()
+//                    //obtener la media
+//                    .collect(averagingDouble(Producto::getPrecio)))
+//            //redondear a dos decimales
+//					.setScale(2,RoundingMode.HALF_UP));
+
             assertEquals(BigDecimal.valueOf(271.72), bd);
             prodHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -1123,7 +1242,10 @@ class TiendaTest {
             //TODO STREAMS
             Optional<Double> max = listProd.stream().map(producto -> producto.getPrecio())
                     .reduce(Double::min);
-
+//          obtener el mas barato
+//			.min(Double::compareTo)
+//           lo mismo que get pero si no hubiera nada devuelve 0.0, el get te va a decir de ponerlo en un ifPresent
+//           .orElse(0.0));
             max.ifPresent(aDouble -> assertEquals(59.99, aDouble));
 
             prodHome.commitTransaction();
@@ -1151,6 +1273,9 @@ class TiendaTest {
                     .map(producto -> producto.getPrecio())
                     .reduce(0d, Double::sum);
 
+//            .mapToDouble(Producto::getPrecio)
+//                    //suma
+//                    .sum());
             assertEquals(2988.96, sumaTotal);
 
             prodHome.commitTransaction();
@@ -1355,7 +1480,7 @@ class TiendaTest {
                         }
                         return String.format("%-20s", fabricante.getNombre()) + " No tiene productos" + "\n";
 
-                    }).collect(Collectors.joining());
+                    }).collect(joining());
 
             System.out.println(resultado1);
 
@@ -1401,7 +1526,7 @@ class TiendaTest {
                         }
                         return "";
 
-                    }).collect(Collectors.joining());
+                    }).collect(joining());
 
             System.out.println(resultado1);
 
