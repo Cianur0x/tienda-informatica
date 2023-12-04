@@ -5,6 +5,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.comparing;
+import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.*;
 
 public class Main {
@@ -204,7 +205,7 @@ public class Main {
                 .filter(n -> n % 2 == 0)
                 .count();
 
-        Comparator dishCaloriesComparator = Comparator.comparingInt(Dish::getCalories);
+        Comparator dishCaloriesComparator = comparingInt(Dish::getCalories);
 
          // Optional<Dish> mostCalorieDish = menu.stream().collect(maxBy(dishCaloriesComparator));
 
@@ -224,13 +225,76 @@ public class Main {
 
         Map<Dish.Type, List<Dish>> dishesByType = menu.stream().collect(groupingBy(Dish::getType));
 
-//         enum CaloricLevel { DIET, NORMAL, FAT };
+       enum CaloricLevel { DIET, NORMAL, FAT };
+
+        Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = menu.stream()
+                .collect( groupingBy(dish ->
+                { if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+                else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                else return CaloricLevel.FAT; } ));
+
+        Map<Dish.Type, Map<CaloricLevel, List<Dish>>> dishesByTypeCaloricLevel = menu.stream()
+                .collect( groupingBy(Dish::getType , groupingBy(dish ->
+                {
+                    if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+                    else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                    else return CaloricLevel.FAT;
+                } ) ) );
+
+/* Resultado mapa a 2 niveles: 1er nivel TYPE y 2o nivel CaloricLevel
+{MEAT={DIET=[chicken], NORMAL=[beef], FAT=[pork]}
+, FISH={DIET=[prawns], NORMAL=[salmon]}
+, OTHER={DIET=[rice, seasonal fruit], NORMAL=[french fries, pizza]}}
+*/
+
+        Map<Dish.Type, Long> typesCount = menu.stream().collect( groupingBy(Dish::getType, counting()));
+
+/*
+{MEAT=3, FISH=2, OTHER=4}
+*/
+
+        Map<Dish.Type, Integer> totalCaloriesByType = menu.stream().collect(groupingBy(Dish::getType, summingInt(Dish::getCalories)));
+
+        Map<Dish.Type, Optional<Dish>> mostCaloricByType = menu.stream()
+                .collect(groupingBy(Dish::getType, maxBy(comparingInt(Dish::getCalories))));
+
+/*
+{FISH=Optional[salmon], OTHER=Optional[pizza], MEAT=Optional[pork]}
+*/
+
+//Se puede eliminar el Optional<Dish> mediante collectingAndThen envolviendo a la función de collect
+//y operando sobre cada uno de los elementos antes de devolverlo
+
+        Map<Dish.Type, Dish> mostCaloricByTyp2e = menu.stream() .collect(groupingBy(Dish::getType,  collectingAndThen(
+                maxBy(comparingInt(Dish::getCalories)),
+                Optional::get)));
+/*
+{FISH=salmon, OTHER=pizza, MEAT=pork}
+*/
+
+//        Comparator<Apple> c = Comparator.comparing(Apple::getWeight);
+////Comparador de manzanas por peso en orden ascendente
 //
-//        Map<CaloricLevel, Lis<Dish>> dishesByCaloricLevel = menu.stream()
-//                .collect( groupingBy(dish ->
-//                { if (dish.getCalories() <= 400) return CaloricLevel.DIET;
-//                else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
-//                else return CaloricLevel.FAT; } ));
+//        appleList.sort(c);
+////Lista inventario de manzanas ordenada por peso ascendente
+//        appleList.sort( comparing(Apple::getWeight).reversed() );
+//
+//
+//        inventory.sort(comparing(Apple::getWeight)
+////Comparator inicial por orden ascendente (por defecto) de peso
+//                .reversed()
+////Se invierte el orden a descendente
+//                .thenComparing(Apple::getCountry));
+////Se añade otro campo de ordenación por orden ascendente (por defecto).
+//        Predicate<Apple>  redApples = (Apple apple) -> RED.equals(apple.getColor());
+//// Se define una función predicado (T) -> boolean y a partir de ella se pueden realizar las operaciones lógicas habituales añadiendo más predicados
+//
+//        Predicate<Apple> notRedApples = redApples.negate();
+//
+//        Predicate redAndHeavyApples = redApples.and(apple -> apple.getWeight() > 150);
+//
+//        Predicate redAndHeavyAppleOrGreen = redApple.and(apple -> apple.getWeight() > 150)
+//                .or(apple -> GREEN.equals(a.getColor()));
     }
 
 }
